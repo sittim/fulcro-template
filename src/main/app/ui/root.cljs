@@ -182,7 +182,8 @@
    :initial-state {:root/router          {}
                    :root/login           {}
                    :root/current-session {}}}
-  (let [current-tab (some-> (dr/current-route this this) first keyword)]
+  (let [current-tab (some-> (dr/current-route this this) first keyword)
+        top-router-state (or (uism/get-active-state this ::TopRouter) :initial)]
     (div :.ui.container
       (div :.ui.secondary.pointing.menu
         (dom/a :.item {:classes [(when (= :main current-tab) "active")]
@@ -191,9 +192,9 @@
                        :onClick (fn [] (dr/change-route this ["settings"]))} "Settings")
         (div :.right.menu
           (ui-login login)))
-      (div :.ui.grid
-        (div :.ui.row
-          (ui-top-router router))))))
+      (if (= :initial top-router-state)
+        (dom/div :.loading "Loading...")
+        (div :.ui.grid (div :.ui.row (ui-top-router router)))))))
 
 (def ui-top-chrome (comp/factory TopChrome))
 

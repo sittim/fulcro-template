@@ -1,7 +1,9 @@
 (ns app.server-components.middleware
   (:require
+    [clojure.string :as str]
     [app.server-components.config :refer [config]]
     [app.server-components.pathom :refer [parser]]
+    [com.fulcrologic.fulcro.networking.file-upload :as file-upload]
     [mount.core :refer [defstate]]
     [com.fulcrologic.fulcro.server.api-middleware :refer [handle-api-request
                                                           wrap-transit-params
@@ -18,13 +20,13 @@
      :headers {"Content-Type" "text/plain"}
      :body    "NOPE"}))
 
-
 (defn wrap-api [handler uri]
   (fn [request]
     (if (= uri (:uri request))
-      (handle-api-request
-        (:transit-params request)
-        (fn [tx] (parser {:ring/request request} tx)))
+      (handle-api-request (:transit-params request)
+        (fn [query]
+          (parser {:ring/request request}
+            query)))
       (handler request))))
 
 ;; ================================================================================
@@ -70,30 +72,23 @@
 
 (defn wrap-html-routes [ring-handler]
   (fn [{:keys [uri anti-forgery-token] :as req}]
-    (cond
-      (#{"/" "/index.html"} uri)
+    (if (or (str/starts-with? uri "/api")
+          (str/starts-with? uri "/images")
+          (str/starts-with? uri "/files")
+          (str/starts-with? uri "/js"))
+      (ring-handler req)
+
       (-> (resp/response (index anti-forgery-token))
-        (resp/content-type "text/html"))
-
-      ;; See note above on the `wslive` function.
-      (#{"/wslive.html"} uri)
-      (-> (resp/response (wslive anti-forgery-token))
-        (resp/content-type "text/html"))
-
-      :else
-      (ring-handler req))))
+        (resp/content-type "text/html")))))
 
 (defstate middleware
   :start
-  (let [defaults-config (:ring.middleware/defaults-config config)
-        legal-origins   (get config :legal-origins #{"localhost"})]
+  (let [defaults-config (:ring.middleware/defaults-config config)]
     (-> not-found-handler
       (wrap-api "/api")
-      wrap-transit-params
-      wrap-transit-response
+      (file-upload/wrap-mutation-file-uploads {})
+      (wrap-transit-params {})
+      (wrap-transit-response {})
       (wrap-html-routes)
-      ;; If you want to set something like session store, you'd do it against
-      ;; the defaults-config here (which comes from an EDN file, so it can't have
-      ;; code initialized).
-      ;; E.g. (wrap-defaults (assoc-in defaults-config [:session :store] (my-store)))
       (wrap-defaults defaults-config))))
+

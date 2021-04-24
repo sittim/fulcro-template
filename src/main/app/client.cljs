@@ -27,6 +27,7 @@
   ;(inspect/app-started! SPA)
   (app/set-root! SPA root/Root {:initialize-state? true})
   (dr/initialize! SPA)
+  (dr/change-route! SPA ["main"])
   (log/info "Starting session machine.")
   (uism/begin! SPA session/session-machine ::session/session
     {:actor/login-form      root/Login

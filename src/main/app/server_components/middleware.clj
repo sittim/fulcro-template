@@ -17,7 +17,8 @@
     [ring.middleware.session :refer [wrap-session]]
     [ring.middleware.content-type :refer [wrap-content-type]]
     [ring.middleware.not-modified :refer [wrap-not-modified]]
-    [ring.middleware.resource :refer [wrap-resource]]))
+    [ring.middleware.resource :refer [wrap-resource]]
+    [clojure.pprint :refer [pprint]]))
 
 ; ------------------------------------------------------------------------------
 (def ^:private not-found-handler
@@ -56,17 +57,17 @@
       [:div#app]
       [:script {:src "js/main/main.js"}]]]))
 
-;; ================================================================================
-;; Workspaces can be accessed via shadow's http server on http://localhost:8023/workspaces.html
-;; but that will not allow full-stack fulcro cards to talk to your server. This
-;; page embeds the CSRF token, and is at `/wslive.html` on your server (i.e. port 3000).
-;; ================================================================================
-(defn wslive [csrf-token]
-  (log/debug "Serving wslive.html")
+;; =============================================================================
+;; Account conformation page, renders with user click on the account
+;; confirmation email link
+;; =============================================================================
+(defn account-configuration-email [csrf-token uri]
+  (log/debug "Confirm Email Render page")
+  (prn "URI: \"" uri "\"")
   (html5
     [:html {:lang "en"}
      [:head {:lang "en"}
-      [:title "devcards"]
+      [:title "Application"]
       [:meta {:charset "utf-8"}]
       [:meta {:name "viewport" :content "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"}]
       [:link {:href "https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css"
@@ -74,20 +75,48 @@
       [:link {:rel "shortcut icon" :href "data:image/x-icon;," :type "image/x-icon"}]
       [:script (str "var fulcro_network_csrf_token = '" csrf-token "';")]]
      [:body
-      [:div#app]
-      [:script {:src "workspaces/js/main.js"}]]]))
+      [:div (str "This is account confirmation email")]]]))
+      ;[:div#app]
+      ;[:script {:src "js/main/main.js"}]]]))
+
+;; ================================================================================
+;; Workspaces can be accessed via shadow's http server on http://localhost:8023/workspaces.html
+;; but that will not allow full-stack fulcro cards to talk to your server. This
+;; page embeds the CSRF token, and is at `/wslive.html` on your server (i.e. port 3000).
+;; ================================================================================
+;(defn wslive [csrf-token]
+  ;(log/debug "Serving wslive.html")
+  ;(html5
+    ;[:html {:lang "en"}
+     ;[:head {:lang "en"}
+      ;[:title "devcards"]
+      ;[:meta {:charset "utf-8"}]
+      ;[:meta {:name "viewport" :content "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"}]
+      ;[:link {:href "https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css"
+              ;:rel  "stylesheet"}]
+      ;[:link {:rel "shortcut icon" :href "data:image/x-icon;," :type "image/x-icon"}]
+      ;[:script (str "var fulcro_network_csrf_token = '" csrf-token "';")]]
+     ;[:body
+      ;[:div#app]
+      ;[:script {:src "workspaces/js/main.js"}]]]))
 
 ; ------------------------------------------------------------------------------
 (defn wrap-html-routes [ring-handler]
   (fn [{:keys [uri anti-forgery-token] :as req}]
+    (prn "URI:")
+    (pprint uri)
+    (prn "URI:")
     (if (or (str/starts-with? uri "/api")
           (str/starts-with? uri "/images")
           (str/starts-with? uri "/files")
           (str/starts-with? uri "/js"))
       (ring-handler req)
 
-      (-> (resp/response (index anti-forgery-token))
-        (resp/content-type "text/html")))))
+      (if (str/starts-with? uri "/email")
+        (-> (resp/response (account-configuration-email anti-forgery-token uri))
+          (resp/content-type "text/html"))
+        (-> (resp/response (index anti-forgery-token))
+          (resp/content-type "text/html"))))))
 
 ; ------------------------------------------------------------------------------
 (defstate middleware

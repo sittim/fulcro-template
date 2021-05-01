@@ -33,4 +33,7 @@
                                      fulcrologic/fulcro-spec     {:mvn/version "3.1.8"}
                                      binaryage/devtools          {:mvn/version "1.0.0"}
                                      com.github.awkay/workspaces {:mvn/version "1.0.2"},
-                                     org.clojure/tools.namespace {:mvn/version "1.0.0"}}}}}
+                                     org.clojure/tools.namespace {:mvn/version "1.0.0"}
+                                     cider/cider-nrepl               {:mvn/version "0.26.0"}
+                                     iced-nrepl/iced-nrepl           {:mvn/version "1.2.1"}
+                                     refactor-nrepl/refactor-nrepl   {:mvn/version "2.5.1"}}}}}

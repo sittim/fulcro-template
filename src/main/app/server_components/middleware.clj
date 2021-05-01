@@ -5,21 +5,28 @@
     [app.server-components.pathom :refer [parser]]
     [com.fulcrologic.fulcro.networking.file-upload :as file-upload]
     [mount.core :refer [defstate]]
+    [hiccup.page :refer [html5]]
     [com.fulcrologic.fulcro.server.api-middleware :refer [handle-api-request
                                                           wrap-transit-params
                                                           wrap-transit-response]]
     [ring.middleware.defaults :refer [wrap-defaults]]
-    [ring.util.response :refer [response file-response resource-response]]
-    [ring.util.response :as resp]
-    [hiccup.page :refer [html5]]
-    [taoensso.timbre :as log]))
+    [ring.util.response :as resp :refer [response
+                                         file-response
+                                         resource-response]]
+    [taoensso.timbre :as log]
+    [ring.middleware.session :refer [wrap-session]]
+    [ring.middleware.content-type :refer [wrap-content-type]]
+    [ring.middleware.not-modified :refer [wrap-not-modified]]
+    [ring.middleware.resource :refer [wrap-resource]]))
 
+; ------------------------------------------------------------------------------
 (def ^:private not-found-handler
   (fn [req]
     {:status  404
      :headers {"Content-Type" "text/plain"}
      :body    "NOPE"}))
 
+; ------------------------------------------------------------------------------
 (defn wrap-api [handler uri]
   (fn [request]
     (if (= uri (:uri request))
@@ -70,6 +77,7 @@
       [:div#app]
       [:script {:src "workspaces/js/main.js"}]]]))
 
+; ------------------------------------------------------------------------------
 (defn wrap-html-routes [ring-handler]
   (fn [{:keys [uri anti-forgery-token] :as req}]
     (if (or (str/starts-with? uri "/api")
@@ -81,6 +89,7 @@
       (-> (resp/response (index anti-forgery-token))
         (resp/content-type "text/html")))))
 
+; ------------------------------------------------------------------------------
 (defstate middleware
   :start
   (let [defaults-config (:ring.middleware/defaults-config config)]
@@ -89,6 +98,10 @@
       (file-upload/wrap-mutation-file-uploads {})
       (wrap-transit-params {})
       (wrap-transit-response {})
+      (wrap-session)
+      (wrap-resource "public")
+      wrap-content-type
+      wrap-not-modified
       (wrap-html-routes)
       (wrap-defaults defaults-config))))
 

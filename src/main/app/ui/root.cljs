@@ -107,31 +107,37 @@
                              :onClick #(uism/trigger! this ::session/session :event/toggle-modal)}
               "Login"
               (when open?
-                (dom/div :.four.wide.ui.raised.teal.segment {:onClick (fn [e]
-                                                                        ;; Stop bubbling (would trigger the menu toggle)
-                                                                        (evt/stop-propagation! e))
-                                                             :classes [floating-menu]}
+                (dom/div 
+                  :.four.wide.ui.raised.teal.segment 
+                  {;:onClick (fn [e])
+                             ;Stop bubbling (would trigger the menu toggle)
+                             ;j(evt/stop-propagation! e))
+                   :classes [floating-menu]}
                   (dom/h3 :.ui.header "Login")
                   (div :.ui.form {:classes [(when (seq error) "error")]}
                     (field {:label    "Email"
                             :value    email
+                            :onClick #(evt/stop-propagation! %)
                             :onChange #(m/set-string! this :account/email :event %)})
                     (field {:label    "Password"
                             :type     "password"
                             :value    password
+                            :onClick #(evt/stop-propagation! %)
                             :onChange #(comp/set-state! this {:password (evt/target-value %)})})
                     (div :.ui.error.message error)
-                    (div :.ui.field
+                    (div :.ui.field {:onClick #(evt/stop-propagation! %)}
                       (dom/button :.ui.button
-                        {:onClick (fn [] (uism/trigger! this ::session/session :event/login {:username email
-                                                                                             :password password}))
+                        {:onClick (fn [] 
+                                    (uism/trigger! this
+                                                   ::session/session 
+                                                   :event/login {:username email
+                                                                 :password password}))
                          :classes [(when loading? "loading")]} "Login"))
-                    (div :.ui.message
+                    (div :.ui.message {:onClick #(evt/stop-propagation! %)}
                       (dom/p "Don't have an account?")
-                      (dom/a {:onClick (fn []
-                                         (uism/trigger! this ::session/session :event/toggle-modal {})
-                                         (dr/change-route this ["signup"]))}
-                        "Please sign up!"))))))))))))
+                      (dom/a {:onClick #(uism/trigger! this ::session/session :event/toggle-modal)
+                              :href "/signup"}
+                             "Please sign up!"))))))))))))
 
 (def ui-login (comp/factory Login))
 
@@ -187,9 +193,11 @@
     (div :.ui.container
       (div :.ui.secondary.pointing.menu
         (dom/a :.item {:classes [(when (= :main current-tab) "active")]
-                       :onClick (fn [] (dr/change-route this ["main"]))} "Main")
+                       :href "/main"} "Main")
         (dom/a :.item {:classes [(when (= :settings current-tab) "active")]
-                       :onClick (fn [] (dr/change-route this ["settings"]))} "Settings")
+                       :href "/settings"} "Settings")
+        (dom/a :.item {:classes [(when (= :signup current-tab) "active")]
+                       :href "/signup"} "Sign Up")
         (div :.right.menu
           (ui-login login)))
       (if (= :initial top-router-state)
